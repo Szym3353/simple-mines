@@ -1,5 +1,5 @@
 <template>
-    <div @click="click({numberClicked: data.number, checkedNumbers: []})" @contextmenu.prevent="flag" class="box w-8 h-8 cursor-pointer hover:bg-gray-400 transition-colors flex justify-center items-center" :class="{'bg-gray-900': data.checked, 'text-white': data.checked, 'bg-green-500': !data.checked}">
+    <div @click="click({numberClicked: data.number, checkedNumbers: []})" @contextmenu.prevent="flag" class="box w-7 h-7 cursor-pointer hover:bg-gray-400 transition-colors flex justify-center items-center" :class="{'bg-gray-900': data.checked, 'text-white': data.checked, 'bg-green-500': !data.checked}">
         <span v-if="data.count > 0">
             {{data.count}}
         </span>
@@ -13,22 +13,27 @@ export default {
     props: ['data'],
     methods: {
         flag(){
+            if(this.data.checked || this.$store.state.config.lost) return
             this.$store.commit('flag', this.data.number)
         },
         click(currentBoxData){
-            console.log('Clicked box ', currentBoxData)
             let store = this.$store
             const currentBox = store.state.mapBoxes.find( ({number}) => number === currentBoxData.numberClicked)
+            let currentBoxNumber = currentBoxData.numberClicked
             if(store.state.config.lost || store.state.config.won || currentBox.flagged) return
             let count = 0
             function check(number){
-                if(store.state.mapBoxes[number].bomb) count = count + 1
+                if(store.state.mapBoxes[number].bomb) count += 1
             }
             if(!currentBox.clicked && !currentBox.flagged){
                 if(currentBox.bomb){
-                    store.commit('lostGame')
+                    if(store.state.config.firstClick){
+                        store.commit('firstClickedBomb', currentBoxNumber)
+                        this.click(currentBoxData)
+                    }else{
+                        store.commit('lostGame')
+                    }
                 }else{
-                    let currentBoxNumber = currentBoxData.numberClicked
                     //BORDERS
                     if(currentBoxNumber > 0 && currentBoxNumber < 13){
                         check(currentBoxNumber + 1)
@@ -83,7 +88,6 @@ export default {
 
 
                     else{
-                        console.log('else')
                         check(currentBoxNumber + 1)
                         check(currentBoxNumber - 1)
                         check(currentBoxNumber - 15)
